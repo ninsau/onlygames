@@ -1,19 +1,8 @@
 "use client";
 
+import { reducer, word } from "@/lib/helpers";
+import { State } from "@/lib/types";
 import React, { useEffect, useReducer } from "react";
-
-interface State {
-  gridContent: string[][];
-  currentRow: number;
-  currentCell: number;
-  gameOver: boolean;
-  submittedRows: boolean[];
-}
-
-interface Action {
-  type: string;
-  letter?: string;
-}
 
 const initialState: State = {
   gridContent: Array(6)
@@ -25,51 +14,7 @@ const initialState: State = {
   submittedRows: Array(6).fill(false),
 };
 
-const word = "FRUIT"; // Target word
-
-function reducer(state: State, action: Action): State {
-  switch (action.type) {
-    case "ADD_LETTER":
-      if (state.gameOver) return state; // Do nothing if game is over
-      const newGridContent = [...state.gridContent.map((row) => [...row])];
-      newGridContent[state.currentRow][state.currentCell] = action.letter!;
-      return {
-        ...state,
-        gridContent: newGridContent,
-        currentCell: state.currentCell + 1,
-      };
-    case "REMOVE_LETTER":
-      if (state.gameOver) return state; // Do nothing if game is over
-      const newGridContent1 = [...state.gridContent.map((row) => [...row])];
-      newGridContent1[state.currentRow][state.currentCell - 1] = "";
-      return {
-        ...state,
-        gridContent: newGridContent1,
-        currentCell: state.currentCell - 1,
-      };
-    case "MOVE_TO_NEXT_ROW":
-      if (state.gameOver) return state; // Do nothing if game is over
-      const newSubmittedRows = [...state.submittedRows];
-      newSubmittedRows[state.currentRow] = true;
-      return {
-        ...state,
-        currentRow: state.currentRow + 1,
-        currentCell: 0,
-        submittedRows: newSubmittedRows,
-      };
-    case "GAME_OVER":
-      const updatedSubmittedRows = [...state.submittedRows];
-      updatedSubmittedRows[state.currentRow] = true;
-      return {
-        ...state,
-        gameOver: true,
-        submittedRows: updatedSubmittedRows,
-      };
-    default:
-      throw new Error();
-  }
-}
-
+console.log(word,"sds")
 const Grid: React.FC = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
 
@@ -80,7 +25,7 @@ const Grid: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (state.gameOver) return; // Do nothing if game is over
+      if (state.gameOver) return;
       const key = event.key.toUpperCase();
       if (key.length === 1 && key.match(/[A-Z]/i)) {
         if (state.currentCell < 5) {
@@ -94,13 +39,12 @@ const Grid: React.FC = () => {
         state.currentRow < 5
       ) {
         if (isRowCorrect(state.gridContent[state.currentRow])) {
-          dispatch({ type: "GAME_OVER" }); // Game over if the row is correct
+          dispatch({ type: "GAME_OVER" });
         } else {
           dispatch({ type: "MOVE_TO_NEXT_ROW" });
         }
       }
 
-      // Check for game over conditions
       if (
         state.currentRow === 5 ||
         (state.currentCell === 5 && state.currentRow === 4)
@@ -116,18 +60,19 @@ const Grid: React.FC = () => {
     };
   }, [state.currentRow, state.currentCell, state.gameOver]);
 
-  function getColor(rowIndex: number, columnIndex: number, letter: string) {
+  const getColor = (rowIndex: number, columnIndex: number, letter: string) => {
     if (state.submittedRows[rowIndex]) {
       if (word.includes(letter)) {
         if (word[columnIndex] === letter) {
-          return "bg-green-200";
+          return "bg-green-500";
         } else {
-          return "bg-yellow-200";
+          return "bg-yellow-500";
         }
       }
+      return "bg-gray-900";
     }
     return "";
-  }
+  };
 
   return (
     <div
