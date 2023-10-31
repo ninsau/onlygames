@@ -6,6 +6,8 @@ interface State {
   gridContent: string[][];
   currentRow: number;
   currentCell: number;
+  gameOver: boolean;
+  submittedRows: boolean[];
 }
 
 interface Action {
@@ -19,11 +21,16 @@ const initialState: State = {
     .map(() => Array(5).fill("")),
   currentRow: 0,
   currentCell: 0,
+  gameOver: false,
+  submittedRows: Array(6).fill(false),
 };
+
+const word = "FRUIT"; // Target word
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case "ADD_LETTER":
+      if (state.gameOver) return state; // Do nothing if game is over
       const newGridContent = [...state.gridContent.map((row) => [...row])];
       newGridContent[state.currentRow][state.currentCell] = action.letter!;
       return {
@@ -32,6 +39,7 @@ function reducer(state: State, action: Action): State {
         currentCell: state.currentCell + 1,
       };
     case "REMOVE_LETTER":
+      if (state.gameOver) return state; // Do nothing if game is over
       const newGridContent1 = [...state.gridContent.map((row) => [...row])];
       newGridContent1[state.currentRow][state.currentCell - 1] = "";
       return {
@@ -40,10 +48,22 @@ function reducer(state: State, action: Action): State {
         currentCell: state.currentCell - 1,
       };
     case "MOVE_TO_NEXT_ROW":
+      if (state.gameOver) return state; // Do nothing if game is over
+      const newSubmittedRows = [...state.submittedRows];
+      newSubmittedRows[state.currentRow] = true;
       return {
         ...state,
         currentRow: state.currentRow + 1,
         currentCell: 0,
+        submittedRows: newSubmittedRows,
+      };
+    case "GAME_OVER":
+      const updatedSubmittedRows = [...state.submittedRows];
+      updatedSubmittedRows[state.currentRow] = true;
+      return {
+        ...state,
+        gameOver: true,
+        submittedRows: updatedSubmittedRows,
       };
     default:
       throw new Error();
@@ -53,8 +73,14 @@ function reducer(state: State, action: Action): State {
 const Grid: React.FC = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
 
+  const isRowCorrect = (row: string[]): boolean => {
+    const isCorrect = row.every((letter, index) => letter === word[index]);
+    return isCorrect;
+  };
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (state.gameOver) return; // Do nothing if game is over
       const key = event.key.toUpperCase();
       if (key.length === 1 && key.match(/[A-Z]/i)) {
         if (state.currentCell < 5) {
@@ -65,9 +91,21 @@ const Grid: React.FC = () => {
       } else if (
         key === "ENTER" &&
         state.currentCell === 5 &&
-        state.currentRow < 4
+        state.currentRow < 5
       ) {
-        dispatch({ type: "MOVE_TO_NEXT_ROW" });
+        if (isRowCorrect(state.gridContent[state.currentRow])) {
+          dispatch({ type: "GAME_OVER" }); // Game over if the row is correct
+        } else {
+          dispatch({ type: "MOVE_TO_NEXT_ROW" });
+        }
+      }
+
+      // Check for game over conditions
+      if (
+        state.currentRow === 5 ||
+        (state.currentCell === 5 && state.currentRow === 4)
+      ) {
+        dispatch({ type: "GAME_OVER" });
       }
     };
 
@@ -76,9 +114,20 @@ const Grid: React.FC = () => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [state.currentRow, state.currentCell]);
+  }, [state.currentRow, state.currentCell, state.gameOver]);
 
-  console.log(state.gridContent)
+  function getColor(rowIndex: number, columnIndex: number, letter: string) {
+    if (state.submittedRows[rowIndex]) {
+      if (word.includes(letter)) {
+        if (word[columnIndex] === letter) {
+          return "bg-green-200";
+        } else {
+          return "bg-yellow-200";
+        }
+      }
+    }
+    return "";
+  }
 
   return (
     <div
@@ -90,10 +139,13 @@ const Grid: React.FC = () => {
           row.map((letter, columnIndex) => (
             <div
               key={`${rowIndex}-${columnIndex}`}
-              className="border border-gray-500 flex items-center justify-center text-lg font-bold p-2 w-12 h-12"
+              className={`border border-gray-500 flex items-center justify-center text-lg font-bold p-2 w-12 h-12 ${getColor(
+                rowIndex,
+                columnIndex,
+                letter
+              )}`}
               style={{
                 color: "rgb(var(--foreground-rgb))",
-                backgroundColor: "rgb(var(--background-start-rgb))",
               }}
             >
               {letter}
