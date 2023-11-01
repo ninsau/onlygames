@@ -55,8 +55,8 @@ const Modal: FC<ModalProps> = ({ isOpen, onClose }) => {
           </ul>
           <p>
             You have six attempts to guess the word correctly. With each guess,
-            use the feedback to refine your subsequent guesses. Good luck, and
-            may the words be ever in your favor!
+            use the feedback to refine your subsequent guesses. You have one new
+            word per day. Good luck, and may the words be ever in your favor!
           </p>
         </div>
       </div>
