@@ -69,7 +69,7 @@ const Grid: React.FC = () => {
           return "bg-yellow-500";
         }
       }
-      return "bg-gray-900";
+      return "dark:bg-gray-900 bg-gray-300";
     }
     return "";
   };
